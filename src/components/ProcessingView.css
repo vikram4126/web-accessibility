@@ -1,0 +1,134 @@
+.processing-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.processing-card {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.processing-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.processing-spinner {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+}
+
+.spinner-svg {
+  width: 80px;
+  height: 80px;
+  transition: stroke-dasharray 0.4s ease;
+}
+
+.spinner-percent {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+.processing-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.processing-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.progress-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-bar-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--kpmg-blue), var(--accent));
+  border-radius: 999px;
+  transition: width 0.5s ease;
+  animation: progressFill 0.5s ease;
+}
+
+.progress-label {
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.step-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid transparent;
+  transition: all 0.3s;
+}
+
+.step-row.running {
+  background: rgba(0,184,241,0.07);
+  border-color: rgba(0,184,241,0.2);
+}
+
+.step-row.done {
+  background: rgba(0,196,140,0.05);
+  border-color: rgba(0,196,140,0.1);
+}
+
+.step-row.error {
+  background: rgba(255,77,77,0.07);
+  border-color: rgba(255,77,77,0.2);
+}
+
+.step-icon { flex-shrink: 0; margin-top: 2px; }
+.step-icon.success { color: var(--success); }
+.step-icon.danger { color: var(--danger); }
+.step-icon.accent { color: var(--accent); }
+.step-icon.muted { color: var(--text-muted); }
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.step-name { font-size: 14px; font-weight: 500; }
+.step-detail { font-size: 12px; color: var(--text-secondary); }
