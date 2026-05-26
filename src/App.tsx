@@ -105,7 +105,7 @@ export default function App() {
       setStepLabel('Setting Tagged PDF structure...');
       setStep('tagging', 'running');
       await delay(300);
-      setStep('tagging', 'done', 'MarkInfo, Lang, PageLayout, XMP applied');
+      setStep('tagging', 'done', 'StructTreeRoot, MarkInfo, RoleMap, Lang, PageLayout, XMP applied');
 
       // 5. Security + full PDF write
       setStepLabel('Applying security settings...');

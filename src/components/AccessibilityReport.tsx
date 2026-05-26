@@ -21,10 +21,20 @@ export default function AccessibilityReport({ checks, fileName, processedBlob, o
     if (!processedBlob) return;
     const url = URL.createObjectURL(processedBlob);
     const a = document.createElement('a');
+    a.style.display = 'none';
     a.href = url;
-    a.download = fileName.replace('.pdf', '') + '_accessible.pdf';
+    // ensure the filename ends with .pdf correctly even if the original name didn't have it
+    const baseName = fileName.toLowerCase().endsWith('.pdf') ? fileName.slice(0, -4) : fileName;
+    a.download = `${baseName}_accessible.pdf`;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    
+    // In macOS/Safari, removing the anchor synchronously causes the browser to ignore the 'download' attribute
+    // and instead download the blob URL directly, resulting in a file named with a UUID and no extension.
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1000);
   };
 
   const scoreColor = score >= 80 ? 'var(--success)' : score >= 60 ? 'var(--warning)' : 'var(--danger)';
