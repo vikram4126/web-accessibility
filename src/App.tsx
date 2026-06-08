@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import './index.css';
 import UploadZone from './components/UploadZone';
 import MetadataForm from './components/MetadataForm';
@@ -126,7 +126,7 @@ export default function App() {
       setStepLabel('Exporting PDF...');
       setStep('export', 'running');
       await delay(300);
-      setProcessedBlob(new Blob([processedBytes], { type: 'application/pdf' }));
+      setProcessedBlob(new Blob([processedBytes.buffer as ArrayBuffer], { type: 'application/pdf' }));
       setStep('export', 'done', 'Ready for download');
 
       setStepLabel('Complete!');

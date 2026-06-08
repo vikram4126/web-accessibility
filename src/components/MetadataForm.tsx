@@ -1,4 +1,3 @@
-import React from 'react';
 import { FileText, ChevronRight, Image, Loader } from 'lucide-react';
 import type { PDFMetadata } from '../utils/pdfProcessor';
 import type { ImageAltText } from '../utils/altTextGenerator';

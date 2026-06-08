@@ -39,10 +39,10 @@ export async function extractImagesFromPDF(file: File): Promise<ImageAltText[]> 
       canvas.width     = viewport.width;
       canvas.height    = viewport.height;
       const ctx        = canvas.getContext('2d')!;
-      await page.render({ canvasContext: ctx, viewport }).promise;
+      await page.render({ canvas, canvasContext: ctx, viewport }).promise;
       const thumbnailDataUrl = canvas.toDataURL('image/jpeg', 0.6);
 
-      for (const name of imgNames) {
+      for (const _name of imgNames) {
         images.push({
           pageIndex: pageIdx,
           imageIndex: images.length,

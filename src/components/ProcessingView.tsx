@@ -1,4 +1,3 @@
-import React from 'react';
 import { CheckCircle, XCircle, Loader, Clock } from 'lucide-react';
 import './ProcessingView.css';
 
