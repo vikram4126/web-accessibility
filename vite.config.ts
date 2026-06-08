@@ -9,9 +9,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'pdf-lib': ['pdf-lib'],
-          'pdfjs': ['pdfjs-dist'],
+        manualChunks(id) {
+          if (id.includes('pdf-lib')) return 'pdf-lib';
+          if (id.includes('pdfjs-dist')) return 'pdfjs';
         },
       },
     },
