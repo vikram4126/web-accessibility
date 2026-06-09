@@ -86,6 +86,108 @@ function extractBlockPosition(block: string): { x: number; y: number } {
 }
 
 /**
+ * Merges resources from a Form XObject into the main page's Resources dictionary.
+ * Prevents name collisions by renaming conflicting resources with a unique prefix.
+ */
+function mergeResources(
+  pageRes: PDFDict,
+  formRes: PDFDict,
+  formPrefix: string,
+  formContent: string
+): string {
+  let newContent = formContent;
+  const categories = ['Font', 'XObject', 'ExtGState', 'ColorSpace', 'Pattern', 'Shading', 'Properties'] as const;
+
+  for (const cat of categories) {
+    const pageCat = pageRes.lookup(PDFName.of(cat), PDFDict);
+    const formCat = formRes.lookup(PDFName.of(cat), PDFDict);
+
+    if (formCat) {
+      if (!pageCat) {
+        pageRes.set(PDFName.of(cat), formCat);
+      } else {
+        for (const [key, value] of formCat.entries()) {
+          const pageVal = pageCat.get(key);
+          if (!pageVal) {
+            pageCat.set(key, value);
+          } else if (pageVal !== value) {
+            const newNameStr = `${key.decodeText()}_${formPrefix}`;
+            const newName = PDFName.of(newNameStr);
+            pageCat.set(newName, value);
+
+            const regex = new RegExp(`/${key.decodeText()}(\\s+|[^a-zA-Z0-9_-])`, 'g');
+            newContent = newContent.replace(regex, `/${newNameStr}$1`);
+          }
+        }
+      }
+    }
+  }
+  return newContent;
+}
+
+/**
+ * Recursively flattens Form XObjects into the main content stream.
+ */
+function flattenFormXObjects(
+  decodedContents: string,
+  pageResources: PDFDict | undefined
+): string {
+  if (!pageResources) return decodedContents;
+
+  let flattenedContents = decodedContents;
+  let flattenOccurred = true;
+  let pass = 0;
+
+  while (flattenOccurred && pass < 10) {
+    flattenOccurred = false;
+    pass++;
+
+    const xobjectsDict = pageResources.lookup(PDFName.of('XObject'), PDFDict);
+    if (!xobjectsDict) break;
+
+    const regex = /\/([a-zA-Z0-9_-]+)\s+Do/g;
+    let m: RegExpExecArray | null;
+    let newContents = '';
+    let lastIndex = 0;
+
+    while ((m = regex.exec(flattenedContents)) !== null) {
+      const nameStr = m[1];
+      const xobj = xobjectsDict.lookup(PDFName.of(nameStr));
+
+      if (xobj instanceof PDFRawStream) {
+        const subtype = xobj.dict.lookup(PDFName.of('Subtype'));
+        if (subtype === PDFName.of('Form')) {
+          flattenOccurred = true;
+
+          let formContent = decodeStream(xobj);
+          const formRes = xobj.dict.lookup(PDFName.of('Resources'), PDFDict);
+          
+          if (formRes) {
+            formContent = mergeResources(pageResources, formRes, `${nameStr}_${pass}`, formContent);
+          }
+
+          const matrix = xobj.dict.lookup(PDFName.of('Matrix'), PDFArray);
+          let matrixPrefix = '';
+          if (matrix) {
+            matrixPrefix = matrix.asArray().map(n => {
+              if (n instanceof PDFNumber) return n.value();
+              return 0; 
+            }).join(' ') + ' cm\n';
+          }
+
+          const replacement = `\nq\n${matrixPrefix}${formContent}\nQ\n`;
+          newContents += flattenedContents.substring(lastIndex, m.index) + replacement;
+          lastIndex = regex.lastIndex;
+        }
+      }
+    }
+    newContents += flattenedContents.substring(lastIndex);
+    flattenedContents = newContents;
+  }
+  return flattenedContents;
+}
+
+/**
  * Builds and injects a proper PDF StructTreeRoot with real tag elements.
  *
  * Structure:
@@ -121,6 +223,10 @@ function injectStructureTree(pdfDoc: PDFDocument): void {
     } else if (contents instanceof PDFRawStream) {
       decodedContents = decodeStream(contents);
     }
+
+    // ── 1.5 Flatten Form XObjects to expose hidden text/images ────────────
+    const pageResources = page.node.lookup(PDFName.of('Resources'), PDFDict);
+    decodedContents = flattenFormXObjects(decodedContents, pageResources);
 
     // ── 2. Parse all blocks and collect position metadata ─────────────────
     const blocks: ContentBlock[] = [];
