@@ -130,9 +130,10 @@ function mergeResources(
  */
 function flattenFormXObjects(
   decodedContents: string,
-  pageResources: PDFDict | undefined
+  pageResources: PDFDict | undefined,
+  xobjectsDict: PDFDict | undefined
 ): string {
-  if (!pageResources) return decodedContents;
+  if (!xobjectsDict || !pageResources) return decodedContents;
 
   let flattenedContents = decodedContents;
   let flattenOccurred = true;
@@ -142,10 +143,7 @@ function flattenFormXObjects(
     flattenOccurred = false;
     pass++;
 
-    const xobjectsDict = pageResources.lookup(PDFName.of('XObject'), PDFDict);
-    if (!xobjectsDict) break;
-
-    const regex = /\/([a-zA-Z0-9_-]+)\s+Do/g;
+    const regex = /\/([^\s]+)\s+Do/g;
     let m: RegExpExecArray | null;
     let newContents = '';
     let lastIndex = 0;
@@ -212,12 +210,12 @@ function injectStructureTree(pdfDoc: PDFDocument): void {
     const pageH   = page.getHeight(); // needed to flip Y (PDF Y is from bottom)
 
     // ── 1. Decode the page content stream(s) ──────────────────────────────
-    const contents = page.node.get(PDFName.of('Contents'));
+    const contents = page.node.lookup(PDFName.of('Contents'));
     let decodedContents = '';
 
     if (contents instanceof PDFArray) {
       for (let j = 0; j < contents.size(); j++) {
-        const s = contents.get(j);
+        const s = contents.lookup(j);
         if (s instanceof PDFRawStream) decodedContents += decodeStream(s) + '\n';
       }
     } else if (contents instanceof PDFRawStream) {
@@ -225,12 +223,14 @@ function injectStructureTree(pdfDoc: PDFDocument): void {
     }
 
     // ── 1.5 Flatten Form XObjects to expose hidden text/images ────────────
-    const pageResources = page.node.lookup(PDFName.of('Resources'), PDFDict);
-    decodedContents = flattenFormXObjects(decodedContents, pageResources);
+    const entries = (page.node as any).normalizedEntries();
+    const pageResources = entries.Resources;
+    const xobjectsDict = entries.XObject;
+    decodedContents = flattenFormXObjects(decodedContents, pageResources, xobjectsDict);
 
     // ── 2. Parse all blocks and collect position metadata ─────────────────
     const blocks: ContentBlock[] = [];
-    const regex = /(BT[\s\S]*?ET|\/[a-zA-Z0-9_]+\s+Do)/g;
+    const regex = /(BT[\s\S]*?ET|\/[^\s]+\s+Do)/g;
     let m: RegExpExecArray | null;
     let srcIdx = 0;
     const contextWindow = 300;
@@ -270,7 +270,7 @@ function injectStructureTree(pdfDoc: PDFDocument): void {
     // valid, while the StructTree children list is ordered by reading order.
     let newContents = '';
     let lastPos = 0;
-    const regex2 = /(BT[\s\S]*?ET|\/[a-zA-Z0-9_]+\s+Do)/g;
+    const regex2 = /(BT[\s\S]*?ET|\/[^\s]+\s+Do)/g;
     let paintIdx = 0;
     const paintOrderBlocks = [...blocks].sort((a, b) => a.sourceIndex - b.sourceIndex);
 
